@@ -66,7 +66,7 @@
 ### 2.1 Modelado de Datos
 - 🔜 Diseñar esquemas para los modelos principales
 
-- 🔜 Usuario (información básica, roles, seguridad)
+- ✅ Usuario (información básica, roles, seguridad)
 
 - 🔜 Curso (información, categorías, requisitos)
 
