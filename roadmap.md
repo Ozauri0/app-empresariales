@@ -66,7 +66,7 @@
 ### 2.1 Modelado de Datos
 - 🔜 Diseñar esquemas para los modelos principales
 
-- ✅ Usuario (información básica, roles, seguridad)
+- 🧪 Usuario (información básica, roles, seguridad)
 
 - 🔜 Curso (información, categorías, requisitos)
 
@@ -90,7 +90,7 @@
 }, { timestamps: true });
   ```
   ### 2.2 Configuración de MongoDB
-- 🔜 Configurar conexión a MongoDB Atlas o local
+- 🧪 Configurar conexión a MongoDB Atlas o local
 
 - 🔜 Implementar manejo de errores de conexión
 
@@ -165,13 +165,13 @@ const requireRole = (roles) => (req, res, next) => {
 
 - ✅ Implementar rutas para gestión de usuarios
 
-- 🔜 Implementar validación de datos con Joi o express-validator
+- 🧪 Implementar validación de datos con Joi o express-validator
 
-- 🔜 Middleware para sanitización de datos
+- 🧪 Middleware para sanitización de datos
 
-- 🔜 Implementar recuperación y reinicio de contraseñas
+- 🧪 Implementar recuperación y reinicio de contraseñas
 
-- 🔜 Implementar verificación de email
+- 🧪 Implementar verificación de email
 
 ### 3.4 API de Cursos
 
