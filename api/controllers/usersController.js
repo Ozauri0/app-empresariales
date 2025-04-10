@@ -1,183 +1,188 @@
-const User = require('../models/user');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+// Simulación de base de datos (reemplazar con una base de datos real)
+let users = [
+  { 
+    id: 1, 
+    username: 'usuario1', 
+    email: 'usuario1@example.com', 
+    password: 'password1', // En una aplicación real, esto estaría hasheado
+    name: 'Usuario Uno',
+    role: 'student'
+  },
+  { 
+    id: 2, 
+    username: 'usuario2', 
+    email: 'usuario2@example.com', 
+    password: 'password2',
+    name: 'Usuario Dos',
+    role: 'teacher'
+  },
+  { 
+    id: 3, 
+    username: 'admin', 
+    email: 'admin@example.com', 
+    password: 'admin123',
+    name: 'Administrador',
+    role: 'admin'
+  }
+];
 
 // Obtener todos los usuarios
-exports.getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (error) {
-    console.error('Error al obtener usuarios:', error.message);
-    res.status(500).json({ message: 'Error al obtener los usuarios' });
-  }
+exports.getAllUsers = (req, res) => {
+  // Por seguridad, no enviar las contraseñas
+  const safeUsers = users.map(user => {
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  });
+  
+  res.json(safeUsers);
 };
 
 // Obtener un usuario por ID
-exports.getUserById = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('Error al obtener usuario:', error.message);
-    res.status(500).json({ message: 'Error al obtener el usuario' });
+exports.getUserById = (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = users.find(user => user.id === userId);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
   }
+  
+  // No enviar la contraseña
+  const { password, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
 };
 
 // Obtener usuario por nombre de usuario
-exports.getUserByUsername = async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.params.username }).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('Error al obtener usuario:', error.message);
-    res.status(500).json({ message: 'Error al obtener el usuario' });
+exports.getUserByUsername = (req, res) => {
+  const username = req.params.username;
+  const user = users.find(user => user.username === username);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
   }
+  
+  // No enviar la contraseña
+  const { password, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
 };
 
 // Registrar un nuevo usuario
-exports.register = async (req, res) => {
-  try {
-    const { username, email, password, name, role } = req.body;
-
-    if (!username || !email || !password || !name) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-
-    const existingUsername = await User.findOne({ username });
-    if (existingUsername) {
-      return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
-    }
-
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      name,
-      role: role || 'student' // Usar 'student' como default si no se especifica
-    });
-    await newUser.save();
-
-    const userResponse = newUser.toObject();
-    delete userResponse.password;
-    res.status(201).json(userResponse);
-  } catch (error) {
-    console.error('Error al registrar usuario:', error.message);
-    res.status(500).json({ message: 'Error al registrar el usuario' });
+exports.register = (req, res) => {
+  const { username, email, password, name, role = 'student' } = req.body;
+  
+  if (!username || !email || !password || !name) {
+    return res.status(400).json({ message: 'Todos los campos son obligatorios' });
   }
+  
+  // Verificar si el usuario o email ya existen
+  if (users.some(user => user.username === username)) {
+    return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
+  }
+  
+  if (users.some(user => user.email === email)) {
+    return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
+  }
+  
+  const newUser = {
+    id: users.length + 1,
+    username,
+    email,
+    password, // En una aplicación real, hashearíamos esta contraseña
+    name,
+    role
+  };
+  
+  users.push(newUser);
+  
+  // No enviar la contraseña en la respuesta
+  const { password: _, ...userWithoutPassword } = newUser;
+  res.status(201).json(userWithoutPassword);
 };
 
 // Iniciar sesión
-exports.login = async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Nombre de usuario y contraseña son obligatorios' });
-    }
-
-    const user = await User.findOne({ username });
-    if (!user || !await bcrypt.compare(password, user.password)) {
-      return res.status(401).json({ message: 'Credenciales inválidas' });
-    }
-
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1h' }
-    );
-
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    res.json({
-      message: 'Inicio de sesión exitoso',
-      user: userResponse,
-      token
-    });
-  } catch (error) {
-    console.error('Error al iniciar sesión:', error.message);
-    res.status(500).json({ message: 'Error al iniciar sesión' });
+exports.login = (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Nombre de usuario y contraseña son obligatorios' });
   }
+  
+  const user = users.find(user => user.username === username && user.password === password);
+  
+  if (!user) {
+    return res.status(401).json({ message: 'Credenciales inválidas' });
+  }
+  
+  // En una aplicación real, generaríamos un token JWT aquí
+  
+  // No enviar la contraseña en la respuesta
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({
+    message: 'Inicio de sesión exitoso',
+    user: userWithoutPassword,
+    token: 'token-simulado-' + user.id // En una app real, sería un token JWT
+  });
 };
 
 // Actualizar un usuario
-exports.updateUser = async (req, res) => {
-  try {
-    const { role, password, ...updateData } = req.body;
-
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.json(user);
-  } catch (error) {
-    console.error('Error al actualizar usuario:', error.message);
-    res.status(500).json({ message: 'Error al actualizar el usuario' });
+exports.updateUser = (req, res) => {
+  const userId = parseInt(req.params.id);
+  const userIndex = users.findIndex(user => user.id === userId);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
   }
+  
+  // No permitir cambiar el rol a través de esta función
+  const { role, ...updateData } = req.body;
+  
+  const updatedUser = { 
+    ...users[userIndex],
+    ...updateData,
+    id: userId // Asegurarse de que el ID no cambie
+  };
+  
+  users[userIndex] = updatedUser;
+  
+  // No enviar la contraseña en la respuesta
+  const { password, ...userWithoutPassword } = updatedUser;
+  res.json(userWithoutPassword);
 };
 
 // Eliminar un usuario
-exports.deleteUser = async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error al eliminar usuario:', error.message);
-    res.status(500).json({ message: 'Error al eliminar el usuario' });
+exports.deleteUser = (req, res) => {
+  const userId = parseInt(req.params.id);
+  const userIndex = users.findIndex(user => user.id === userId);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
   }
+  
+  users.splice(userIndex, 1);
+  res.status(204).send();
 };
 
 // Cambiar rol de usuario (solo para administradores)
-exports.changeUserRole = async (req, res) => {
-  try {
-    const { role } = req.body;
-
-    if (!role) {
-      return res.status(400).json({ message: 'El rol es obligatorio' });
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { role },
-      { new: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.json(user);
-  } catch (error) {
-    console.error('Error al cambiar rol:', error.message);
-    res.status(500).json({ message: 'Error al cambiar el rol' });
+exports.changeUserRole = (req, res) => {
+  const userId = parseInt(req.params.id);
+  const { role } = req.body;
+  
+  if (!role) {
+    return res.status(400).json({ message: 'El rol es obligatorio' });
   }
+  
+  const userIndex = users.findIndex(user => user.id === userId);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
+  }
+  
+  users[userIndex].role = role;
+  
+  // No enviar la contraseña en la respuesta
+  const { password, ...userWithoutPassword } = users[userIndex];
+  res.json(userWithoutPassword);
 };
 
-// Aliases para compatibilidad
+// Crear alias para mantener compatibilidad con las rutas existentes
 exports.createUser = exports.register;
 exports.loginUser = exports.login;
