@@ -1,10 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const connectDB = require('./config/db'); // Conexión a la base de datos
 const routes = require('./routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+
+connectDB(); // Conectar a MongoDB
+
 
 // Middleware
 app.use(cors());
