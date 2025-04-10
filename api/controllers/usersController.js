@@ -164,4 +164,3 @@ exports.changeUserRole = async (req, res) => {
 //alias para compatibilidad
 exports.createUser = exports.register;
 exports.loginUser = exports.login;
-
