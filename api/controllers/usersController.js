@@ -28,6 +28,16 @@ exports.getUserByUsername = async (req, res) => {
   }
 }
 
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password'); // Obtén todos los usuarios sin las contraseñas
+    res.json(users);
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error.message);
+    res.status(500).json({ message: 'Error al obtener los usuarios' });
+  }
+};
+
 exports.register = async (req, res) => {
   try {
     const { username, email, password, name, role } = req.body;
