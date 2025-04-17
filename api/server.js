@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./config/db');
 const morgan = require('morgan');
 const routes = require('./routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+connectDB();
 // Middleware
 app.use(cors());
 app.use(morgan('dev')); // Para logging de solicitudes HTTP
